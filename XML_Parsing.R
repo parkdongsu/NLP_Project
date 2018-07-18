@@ -106,7 +106,7 @@ connection <- connection
 
 #result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'INSERT INTO COHORT (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)')
 #result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'SELECT 747 as cohort_definition_id, person_id as subject_id, visit_end_date as cohort_start_date , visit_end_date as cohort_end_date FROM CDMPv1.dbo.VISIT_OCCURRENCE where visit_concept_id in (9201,9203) and datediff(day,visit_start_date, visit_end_date)>=7 AND VISIT_START_DATE >= '2005-01-01';')
-result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'select TOP 1000 * from DBO.NOTE')
+result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'select TOP 10000 * from DBO.NOTE')
 
 
 
@@ -140,11 +140,36 @@ for (i in 1:length(result_xml_list)){
     result_xml_list[[i]][,'NOTE_ID'] <- medi_list[['NOTE_ID']][i]
 }
 
-#dataFrame에 결과를 정리해서 넣어줌
-result_xml_df <- result_xml_list[[1]]
+
+
+#dataFrame에 결과를 정리해서 넣어줌 모든 항목이 NA인 부분은 아예 dataframe에 추가하지 않음.
+#rbind 하는 시간이 오래걸려 div번씩 끊고 한번에 합치자.
+div= 1000
+result_tmp_df <- result_xml_list[[1]]
+flag = 0
 for (i in 2:length(result_xml_list)){
-    result_xml_df <- rbind(result_xml_df,result_xml_list[[i]])
+    if (length(result_xml_list[[i]]) == length(result_xml_list[[1]])){
+        result_tmp_df <- rbind(result_tmp_df,result_xml_list[[i]])
+        if(i%%div == 0 & i>=div){
+            if(flag == 0){
+                result_xml_df <- result_tmp_df
+                result_tmp_df <- data.frame(stringsAsFactors = FALSE)
+                flag = 1
+            }
+            else{
+                result_xml_df <- rbind(result_xml_df,result_tmp_df)
+                if(i != length(result_xml_list)){
+                    result_tmp_df <- data.frame(stringsAsFactors = FALSE)
+                }
+            }
+        }
+    }
 }
+if(div > length(result_xml_list)){
+    result_xml_df <- result_tmp_df
+}
+
+
 
 write.csv(result_xml_df,file="D:/Dongsu/R_code/final_xml_df7.csv",row.names = FALSE)
 
