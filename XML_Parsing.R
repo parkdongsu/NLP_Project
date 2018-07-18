@@ -1,0 +1,162 @@
+#XML_parser
+XML_PARSING <- function(xmlList){
+    pattern_start <- as.vector(gregexpr('<[^/<>]+>[^<>]+<\\/[^<>]+>',xmlList)[[1]])
+    pattern_length <- as.vector(attr(gregexpr('<[^/<>]+>[^<>]+<\\/[^<>]+>',xmlList)[[1]],'match.length'))
+    pattern_end <- pattern_start+pattern_length-1
+    
+    xml_data = rep(NA,length(pattern_start))
+    for(i in 1:length(pattern_start)){
+        xml_data[i] <- substr(xmlList,pattern_start[i],pattern_end[i])
+    }
+    
+    return(xml_data)
+}
+
+#diag_Processer
+DIAG_PROCESSING <- function(diag_list){
+    #첫번째 > 를 기준으로 태그를 추출
+    tag_vector  <- as.vector(regexpr('>',diag_list))
+    text_vector <- as.vector(regexpr('</',diag_list))
+    
+    #tag와 text를 구별해 담아줌
+    tag_data_vector <- substr(diag_list,1,tag_vector)
+    text_data_vector <- substr(diag_list,tag_vector+1,text_vector-1)
+    
+    #첫번째 태그부터 다음 첫 태그까지 구간 나눠 할당
+    first_tag_vector <- as.vector(regexpr(tag_data_vector[1],tag_data_vector))# 첫번째 패턴이 나오면 1로 변환
+    
+    #결과 저장할 df 생성
+    final_xml_df <- data.frame(stringsAsFactors = FALSE) 
+    
+    #1의 위치를 찾아 위치 정보 넣어줌
+    data =c()
+    for (i in 1:length(first_tag_vector)){
+        if (first_tag_vector[i] == 1){
+            data[i] <- i
+        }
+    }
+    #NA 제거
+    data <- data[!is.na(data)]
+    
+    #마지막 첫번째 태그의 나머지 값
+    data[length(data)+1] <- (length(first_tag_vector)+1)
+    
+    #tag 중복 제거
+    tag_data_set <- unique(tag_data_vector)
+    
+    #tag를 행이름 설정
+    df <- data.frame(stringsAsFactors = FALSE)
+    for (i in tag_data_set){
+        df[i] <- character(0)
+    }
+    #rbind용 df Setting
+    tmp_df <- df
+    xml_df<- df
+    
+    #df에 값 넣기
+    cnt <- 1
+    for (i in 1:(length(data)-1)){
+        val <- (data[i+1])-(data[i])
+        for (k in 1:val){
+            df[1,tag_data_vector[cnt]] <- text_data_vector[cnt]
+            cnt <- cnt+1
+        }
+        xml_df <- rbind(xml_df, df)
+        df <- tmp_df
+    }
+    final_xml_df <- rbind(final_xml_df,xml_df)
+    
+    return(final_xml_df)
+}
+
+
+########MAIN CODE##############################################################
+
+
+
+
+
+
+# load packages
+if(!require(parallel)) {
+    install.packages("parallel")
+}
+library(parallel)
+
+# 코어 개수 획득
+numCores <- parallel::detectCores() - 1
+# 클러스터 초기화
+myCluster <- parallel::makeCluster(numCores)
+
+Sys.time()
+#파일 셋팅
+file="D:/Dongsu/R_code/note_sample.rds"
+
+
+
+connectionDetails<-DatabaseConnector::createConnectionDetails(dbms="sql server",
+                                                              server="128.1.99.58",
+                                                              schema="Dolphin_CDM.dbo",
+                                                              user="atlas",
+                                                              password="qwer1234!@")
+connection <- DatabaseConnector::connect(connectionDetails)
+connectionDetails <-connectionDetails
+connection <- connection
+
+
+#result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'INSERT INTO COHORT (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)')
+#result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'SELECT 747 as cohort_definition_id, person_id as subject_id, visit_end_date as cohort_start_date , visit_end_date as cohort_end_date FROM CDMPv1.dbo.VISIT_OCCURRENCE where visit_concept_id in (9201,9203) and datediff(day,visit_start_date, visit_end_date)>=7 AND VISIT_START_DATE >= '2005-01-01';')
+result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'select TOP 1000 * from DBO.NOTE')
+
+
+
+
+
+#RDS파일을 데이터프레임으로 저장
+mediFrame <- result
+#mediFrame <- readRDS(file,refhook = NULL)
+
+#list 생성 및 ID, TEXT 저장
+medi_list = list(NOTE_ID=c(NA),NOTE_TEXT=c(NA))
+medi_list['NOTE_ID'] <- mediFrame['NOTE_ID']
+medi_list['NOTE_TEXT'] <- mediFrame['NOTE_TEXT']
+
+#XML Parsing을 위해 ROOT 추가.
+medi_list[['NOTE_TEXT']] <- paste("<xml>",medi_list[['NOTE_TEXT']],"</xml>")
+#XML Parsing을 위해 ><사이에 아무것도 없거나 공백이있다면 엔터 처리해준다.
+medi_list[['NOTE_TEXT']] <- gsub('>[ ]*<','>\n<',medi_list[['NOTE_TEXT']])
+
+#결과 저장할 df 생성
+final_xml_df <- data.frame(stringsAsFactors = FALSE) 
+
+#XML 파서로 나눔(병렬처리)
+diagnosis_list <- parallel::parLapply(cl = myCluster, X = medi_list[['NOTE_TEXT']], fun = XML_PARSING)
+
+#진단서 하나의 DataFrame을 list에 저장(병렬처리)
+result_xml_list <- parallel::parLapply(cl = myCluster, X = diagnosis_list, fun = DIAG_PROCESSING)
+
+#한개의 진단서당 NOTE_ID 삽입
+for (i in 1:length(result_xml_list)){
+    result_xml_list[[i]][,'NOTE_ID'] <- medi_list[['NOTE_ID']][i]
+}
+
+#dataFrame에 결과를 정리해서 넣어줌
+result_xml_df <- result_xml_list[[1]]
+for (i in 2:length(result_xml_list)){
+    result_xml_df <- rbind(result_xml_df,result_xml_list[[i]])
+}
+
+write.csv(result_xml_df,file="D:/Dongsu/R_code/final_xml_df7.csv",row.names = FALSE)
+
+Sys.time()
+
+# 클러스터 중지
+parallel::stopCluster(myCluster)
+#################################################################################
+
+
+
+
+
+
+
