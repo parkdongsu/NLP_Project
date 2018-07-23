@@ -106,14 +106,24 @@ connection <- connection
 
 #result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'INSERT INTO COHORT (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)')
 #result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'SELECT 747 as cohort_definition_id, person_id as subject_id, visit_end_date as cohort_start_date , visit_end_date as cohort_end_date FROM CDMPv1.dbo.VISIT_OCCURRENCE where visit_concept_id in (9201,9203) and datediff(day,visit_start_date, visit_end_date)>=7 AND VISIT_START_DATE >= '2005-01-01';')
-result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'select TOP 10000 * from DBO.NOTE')
 
+diag_note <- DatabaseConnector::dbGetQuery(conn = connection,statement = "SELECT * FROM DBO.NOTE JOIN COHORT ON NOTE.person_id = COHORT.subject_id AND NOTE.NOTE_DATE = COHORT.COHORT_START_DATE WHERE cohort_definition_id = 747 AND NOTE_TITLE = \'퇴원요약\'") ;
+
+#조건 내에 부합하는 df들의 merge 값 설정###############################################
+cohort_outCount_df <- merge(outcomeCount_df,diag_note,by = c("PERSON_ID","NOTE_DATE"))
+#######################################################################################
+
+#outCount 값이 0, 1 인 경우로 dataFrame을 나눔 
+out_value_0 <- cohort_outCount_df[cohort_outCount_df$outcomeCount == 0,]
+out_value_1 <- cohort_outCount_df[cohort_outCount_df$outcomeCount == 1,]
 
 
 
 
 #RDS파일을 데이터프레임으로 저장
-mediFrame <- result
+#out_value_0 = X 경우, out_value_1 = O인 경우###################
+mediFrame <- out_value_1
+################################################################
 #mediFrame <- readRDS(file,refhook = NULL)
 
 #list 생성 및 ID, TEXT 저장
