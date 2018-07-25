@@ -1,22 +1,18 @@
 Sys.setenv(JAVA_HOME="C:\\Program Files\\Java\\jdk1.8.0_171") 
 library(rJava)
 
-install.packages("devtools")
+#install.packages("devtools")
 library(devtools)
-install.packages("drat")
-drat::addRepo("OHDSI")
-install.packages("FeatureExtration")
+#install.packages("drat")
+#drat::addRepo("OHDSI")
+#install.packages("FeatureExtration")
 
-install.packages("drat")
-drat::addRepo("OHDSI")
-install_github("ohdsi/FeatureExtraction", args = "--no-multiarch") 
-install_github("ohdsi/PatientLevelPrediction", args = "--no-multiarch") 
+#install.packages("drat")
+#drat::addRepo("OHDSI")
+#install_github("ohdsi/FeatureExtraction", args = "--no-multiarch") 
+#install_github("ohdsi/PatientLevelPrediction", args = "--no-multiarch") 
 
-
-
-
-
-
+library(DatabaseConnector)
 library(SqlRender)
 library(FeatureExtraction)
 library(PatientLevelPrediction)
@@ -24,19 +20,18 @@ library(PatientLevelPrediction)
 workingFolder<-"D:/Dongsu/R_code/sql"
 setwd(workingFolder)
 
-
 connectionDetails<-DatabaseConnector::createConnectionDetails(dbms="sql server",
-                                                              server="###.###.###.###",
-                                                              schema="#########.dbo",
-                                                              user="#########",
-                                                              password="########")
+                                                              server="128.1.99.58",
+                                                              schema="Dolphin_CDM.dbo",
+                                                              user="atlas",
+                                                              password="qwer1234!@")
 connection <- DatabaseConnector::connect(connectionDetails)
 connectionDetails <-connectionDetails
 connection <- connection
 
-cdmDatabaseSchema<-"#######.dbo"
-targetDatabaseSchema<-"#######.dbo"
-targetCohortTable<-"#######"
+cdmDatabaseSchema<-"Dolphin_CDM.dbo"
+targetDatabaseSchema<-"Dolphin_CDM.dbo"
+targetCohortTable<-"cohort"
 targetCohortId <- 747
 outcomeCohortId <- 748
 cdmversion <- "5"
@@ -57,6 +52,7 @@ sql <- SqlRender::renderSql(sql,
 )$sql
 sql <- SqlRender::translateSql(sql,
                                targetDialect=connectionDetails$dbms)$sql
+
 DatabaseConnector::executeSql(connection,sql)
 
 #모든 응급실입원 환자들
@@ -75,7 +71,7 @@ sql <- SqlRender::translateSql(sql,
                                targetDialect=connectionDetails$dbms)$sql
 DatabaseConnector::executeSql(connection,sql)
 
-#30일 이내에 재입원한 환자를 DF로 뽑아내는 함수들
+#30일 이내에 재입원한 환자를 DF로 뽑아내는 함수드
 covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = FALSE,
                                                                 useDemographicsAge = FALSE, useDemographicsAgeGroup = FALSE,
                                                                 useDemographicsRace = FALSE, useDemographicsEthnicity = FALSE,
@@ -118,14 +114,12 @@ population <- PatientLevelPrediction::createStudyPopulation(plpData, population 
                                                             addExposureDaysToEnd = F)
 
 
-
+#################################################################################################################
+#필요한 정보만 꺼내 dataframe으로 만듦
 outcomeCount_df <- data.frame(c(population["subjectId"],population["cohortStartDate"],population["outcomeCount"]))
+#조인하기 위해 NOTE_TABLE과 속성 이름을 통일 시켜줌 
 colnames(outcomeCount_df) <-c("PERSON_ID","NOTE_DATE","outcomeCount")
-
-
-
-
-
+#################################################################################################################
 
 
 

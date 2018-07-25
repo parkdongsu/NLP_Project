@@ -8,50 +8,15 @@
 #º¯°æÈÄ ex) Unique_word1 ³ªÁß¿¡ POS_EXTRACTIONÇÔ¼ö ½ÇÇàÇÏ¸é ¿µ¾î´Ï±î ±×´ë·Î ³ª¿È ±× ÈÄ list¿¡¼­ Ã£¾Æ¼­ ´Ù½Ã ¹Ù²ãÁÜ 
 #8.¿µ¾î Á¢µÎ»ç, Á¢¹Ì»ç Á¦°ÅÇØ¾ßÇÒÁö?  ¸Â´Ù¸é ±×°Í¸¸ ÇÏ¸é µÇ´ÂÁö # ÀÏ´Ü ³¡³ª°í ÇØ¾ßÇÔ ÁöÁ¤ ¿ë¾î¿Ü¿£ ´Ü¾î Á¤¸³ÈÄ ¾ÕµÚ·Î ¶¿Áö??
 
+#ubuntu È¯°æ¿¡¼­ topicmodels install ½Ã ctm.c:29:25: fatal error: gsl/gsl_rng.h: No such file or directory ¿À·ù ³ª¿À¸é
+#sudo apt-get install libgsl0-dev ·Î ÇØ°á
 
 #»çÀü ÁØºñ»çÇ×########################################
 #XML_Parsing_Pro7¿¡¼­ file=""¿¡ RDS ÆÄÀÏ °æ·Î¸¦ ½áÁÖ°í ½ÇÇàÇÑ ÈÄ ½ÇÇà ÇÒ °Í.
+#C:\Program Files\R\R-3.5.1\library\base\R\RProfile¿¡ options(java.parameters = c("-Xmx16384m","-Dfile.encoding=UTF-8")) Ãß°¡ # KoNLP¿¡·¯ ¹æÁö 
+#options(java.parameters = c("-Xmx16384m","-Dfile.encoding=UTF-8"))
+#options("java.parameters")$java.parameters
 ######################################################
-
-# load packages
-if(!require(KoNLP)) {
-    install.packages('KoNLP')
-}
-if(!require(devtools)) {
-    install.packages('devtools')
-}
-#library(devtools)
-#install_github('haven-jeon/NIADic/NIAdic', build_vignettes = TRUE)
-if(!require(topicmodels)) {
-    install.packages('topicmodels')
-}
-if(!require(openNLP)) {
-    install.packages('openNLP')
-}
-if(!require(NLP)) {
-    install.packages('NLP')
-}
-
-
-library(KoNLP)
-#library(rJava)
-library(topicmodels)
-library(stringr)
-
-#search###############################################
-search_df <- result_xml_df[result_xml_df$`<MN>`=='Çöº´·Â',] # ÅÂ±×, °Ë»ö¾î ÁöÁ¤ ex) <MN>, '¾à¸í'
-######################################################
-
-tag ='<TD>' # NLP Ã³¸®ÇÏ°í ½ÍÀº tag ÀÔ·Â
-
-#°Ë»ö ÈÄ tag°¡ NAÀÎ ÇàÀ» »èÁ¦
-search_df[,tag][is.na(search_df[,tag])] <- ""
-
-for (i in nrow(search_df):1){# µÚ¿¡¼­ºÎÅÍ »èÁ¦ÇØ ÇàÀÌ ¹Ğ·Á¼­ »èÁ¦ µÇÁö ¾Êµµ·Ï Ã³¸®ÇÔ.
-    if(search_df[i,tag] == ""){
-        search_df <- search_df[-i,]
-    }
-}
 
 #POS ÃßÃâ ÇÔ¼ö
 K_POS_EXTRACTION <- function(wordlist){
@@ -64,21 +29,16 @@ K_POS_EXTRACTION <- function(wordlist){
     
     pos_end <- pos_start+pos_length-5
     
-    
-    
-    #ÇÕÄ¡µÇ ¼ø¼­´Â À¯ÁöÇØ¾ßÇÔ. -> ºñÈ¿À²
-    
-    # /ÀÇ À§Ä¡¸¦ ¾ò¾î¼­ µÚ¸¦ »èÁ¦ -> ºñÈ¿À²Àû
-    
-    
     word_data = rep(NA,length(pos_start))
+    word <- c()
     for(i in 1:length(pos_start)){
         word_data[i] <- substr(wordlist,pos_start[i],pos_end[i])
+        word <- paste(word,word_data[i])
     }
-    return(word_data)
+    return(word)
 }
 
-#
+#¹®ÀåÁß Á¦°ÅÇÒ ºÎºĞÀ» ¼±Ã³¸®ÇØÁÖ´Â ÇÔ¼ö  
 NLP_PROCESSING <- function(xmldf){
     #4.Æ¯¼ö ¹®ÀÚ º¯°æ ¹× Á¦°Å
     xmldf <- gsub('&#x0D;', " ", xmldf) # ¶ç¾î¾²±â´Â ¸¶Áö¸·¿¡ ¹«Á¶°Ç ÇÏ³ª·Î ÅëÀÏ ÇØÁÖ´Â ºÎºĞÀÌ ÀÖÀ½.
@@ -107,112 +67,117 @@ NLP_PROCESSING <- function(xmldf){
     
     
     #1.°ø¶õÃ³¸®
-    xmldf <- str_replace_all(xmldf,"[[:space:]]{1,}"," ")
+    xmldf <- stringr::str_replace_all(xmldf,"[[:space:]]{1,}"," ")
     
     #¹Ù²Ü Çü½Ä
     xmldf <- paste(xmldf,'.',sep = '')#¹®ÀåÀÌ ¾Æ´Ñ °æ¿ì ³¯Â¥, ¾à¸í µî Áß¿äÇÑ Á¤º¸°¡ Àß¸®´Â °æ¿ì°¡ ÀÖÀ½. ex) 12-02-02 ´Ü¾î ÇÏ³ªÀÖÀ¸¸é 12-02-0 °ú 2·Î ³ª´¸.
     #¾îÂ÷ÇÇ ¸¶Áö¸· . Ãß°¡ÇØÁÖ¸é µû·Î ³ª´²Áö°í Á¤±ÔÇ¥Çö½Ä¿¡¼­ °Å¸£Áö ¾ÊÀ¸´Ï ±¦ÂúÀ»°Å¶ó°í »ı°¢ÇÔ.
     
 }
-
-########MAIN CODE##############################################################
-#NLP ¿ë df ¸¸µé±â
-xml_df <- search_df[tag]
-
-#NLP_PROCESSING ÇÔ¼ö¸¦ ÅëÇÑ ÃÊ±â ¼³Á¤
-word_df <- apply(xml_df,2,NLP_PROCESSING)
-
-#ÇüÅÂ¼Ò ºĞ¼®ÈÄ ÇÕÄ¡±â
-result_word_list <- list()
-for (i in 1:nrow(word_df)){
-    word_list<-SimplePos22(word_df[i])
+#Ç°»ç ºĞ¼®ºÎ
+POS_ANALYSIS <- function(word_df){
+    word_list <- KoNLP::SimplePos22(word_df)
     if(length(word_list) ==1){
         word_vector <- word_list[[1]]
-        result_word_list[[i]] <- c(word_vector)
+        result_word_list <- c(word_vector)
     } 
     else{
         word_vector <- word_list[[1]]
         for (k in 2:length(word_list)){
             word_vector <- paste(word_vector,'+',word_list[[k]],sep = '')
         }
-        result_word_list[[i]] <- c(word_vector)
+        result_word_list <- c(word_vector)
     }
-}
-
-#¿øÇÏ´Â Ç°»ç ÃßÃâ 
-pos_word <- lapply(result_word_list,K_POS_EXTRACTION)
-
-
-#´Ü¾î ¸®½ºÆ® -> ÁıÇÕ 
-unique_pos_vector <- unique(unlist(pos_word))
-unique_pos_vector
-#""ÀÏ°æ¿ì Áö¿öÁà¾ßÇÔ 
-for (NULLValue in 1:(length(unique_pos_vector))){
-    if (unique_pos_vector[NULLValue] == ""){
-        unique_pos_vector = unique_pos_vector[-NULLValue]
-        break
-    }
+    return(result_word_list)
 }
 
 
-#ÇÑ±Û Ç°»ç ÃßÃâµÚ ¿µ¾î ÁøÇà
-#8.¿µ¾îÀÇ °æ¿ì´Â ÁöÁ¤ ¿ë¾î¿Ü¿£ ´Ü¾î Á¤¸³ÈÄ ¾ÕµÚ·Î ¶¿Áö??
-###ÇÑ±Û Ç°»ç ÃßÃâÈÄ unique_pos_vector ¼³Á¤ÈÄ¿¡ ±× ´Ü¾îµé·Î ÃßÃâÇÏ´Â°Ô ¾î¶³±î
+# load packages
+if(!require(rJava)) {
+    install.packages('rJava')
+}
+if(!require(KoNLP)) {
+    install.packages('KoNLP')
+}
+if(!require(devtools)) {
+    install.packages('devtools')
+}
+#library(devtools)
+#install_github('haven-jeon/NIADic/NIAdic', build_vignettes = TRUE)
+if(!require(topicmodels)) {
+    install.packages('topicmodels')
+}
+if(!require(openNLP)) {
+    install.packages('openNLP')
+}
+if(!require(NLP)) {
+    install.packages('NLP')
+}
+if(!require(parallel)) {
+    install.packages("parallel")
+}
 
-#library('NLP')
-#library('openNLP')
-#library('tm')
+Sys.setenv(JAVA_HOME="C:\\Program Files\\Java/jdk1.8.0_171") 
+library(KoNLP)
+library(rJava)
+library(topicmodels)
+library(stringr)
+library(parallel)
 
-
-#unique_pos_vector <- gsub("[°¡-ÆR]+",NA,unique_pos_vector)
-#unique_pos_vector
-#¶ç¾î¾²±â·Î ±¸ºĞÇØ¼­ ÇÕÄ¡ÀÚ
-#unique_pos_word <- unique_pos_vector[1]
-#for (i in 2:length(unique_pos_vector)){
-#    unique_pos_word <- paste(unique_pos_word,unique_pos_vector[i], sep = " ")
-#}
-#unique_pos_word
-
-#sent <- annotate(unique_pos_word,Maxent_Sent_Token_Annotator())
-#word <- annotate(unique_pos_word,Maxent_Word_Token_Annotator(),sent)
-#PosTag <- annotate(unique_pos_word,Maxent_POS_Tag_Annotator(),word)
-#PosTag
+# ÄÚ¾î °³¼ö È¹µæ
+numCores <- parallel::detectCores() - 1
+# Å¬·¯½ºÅÍ ÃÊ±âÈ­
+myCluster <- parallel::makeCluster(numCores)
 
 ########MAIN CODE##############################################################
 
-##Ãß°¡ÀûÀÎ ÅäÇÈ¸ğÇü ÀÛ¾÷###############################
-
-#pos_word°¡ ºñ¾îÀÖ´Â ºÎºĞÀº pos_word¿Í search_df¿¡¼­µµ »èÁ¦
-for (i in length(pos_word):1){
-    if (pos_word[[i]][1] == ""){
-        pos_word <- pos_word[-i]
-        search_df <- search_df[-i,]
+for (count in 1:2){
+    #search###############################################
+    if(count ==1){
+        search_df <- result_xml_df_0[result_xml_df_0$`<MN>`=='Çöº´·Â',] # ÅÂ±×, °Ë»ö¾î ÁöÁ¤ ex) <MN>, '¾à¸í'
+    }
+    if(count ==2){
+        search_df <- result_xml_df_1[result_xml_df_1$`<MN>`=='Çöº´·Â',] # ÅÂ±×, °Ë»ö¾î ÁöÁ¤ ex) <MN>, '¾à¸í'
+    }
+    ######################################################
+    
+    tag ='<TD>' # NLP Ã³¸®ÇÏ°í ½ÍÀº tag ÀÔ·Â
+    
+    #°Ë»ö ÈÄ tag°¡ NAÀÎ ÇàÀ» »èÁ¦
+    search_df[,tag][is.na(search_df[,tag])] <- ""
+    
+    for (i in nrow(search_df):1){# µÚ¿¡¼­ºÎÅÍ »èÁ¦ÇØ ÇàÀÌ ¹Ğ·Á¼­ »èÁ¦ µÇÁö ¾Êµµ·Ï Ã³¸®ÇÔ.
+        if(search_df[i,tag] == ""){
+            search_df <- search_df[-i,]
+        }
+    }
+    
+    
+    Sys.time()
+    
+    #NLP ¿ë df ¸¸µé±â
+    xml_df <- search_df[tag]
+    
+    #NLP_PROCESSING ÇÔ¼ö¸¦ ÅëÇÑ ÃÊ±â ¼³Á¤(º´·ÄÃ³¸®)
+    word_df <- parApply(myCluster,xml_df,2,NLP_PROCESSING)
+    
+    #ÇüÅÂ¼Ò ºĞ¼®ÈÄ ÇÕÄ¡±â
+    result_word_list <- apply(word_df,1,POS_ANALYSIS)
+    #result_word_list <- parApply(myCluster,word_df,1,POS_ANALYSIS)
+    result_word_list<- unlist(result_word_list)
+    
+    #¿øÇÏ´Â Ç°»ç ÃßÃâ ÈÄ ÇÏ³ªÀÇ ¹®ÀåÀ¸·Î ÇÕÃÄÁÜ. (º´·ÄÃ³¸®)
+    doc.list <- parallel::parLapply(myCluster,result_word_list,K_POS_EXTRACTION)
+    
+    N.docs<-length(doc.list)
+    
+    #note_id¸¦ ¸®½ºÆ®ÀÇ ÀÌ¸§À¸·Î ºÙ¿©ÁÜ 
+    names(doc.list)<- search_df$NOTE_ID
+    
+    if(count ==1){
+        doc.list_0 <- doc.list
+    }
+    if(count ==2){
+        doc.list_1 <- doc.list
     }
 }
-
-
-#DTM Matrix ¸¸µé±â
-DTM <- matrix(nrow=nrow(search_df),ncol=length(unique_pos_vector),data=0)
-#ROW,COL ÀÌ¸§ ÁÖ±â
-NOTE_ID_list <- c(search_df['NOTE_ID'])
-rownames(DTM) <- NOTE_ID_list[['NOTE_ID']]
-colnames(DTM) <- unique_pos_vector
-dim(DTM)
-
-#DTM¿¡ ¹®¼­¿¡ ´Ü¾î Ä«¿îÆ® ÇÒ´ç
-for(i in 1:nrow(DTM)){
-    for(k in pos_word[[i]]){
-        DTM[i,k] <- DTM[i,k] + 1
-    }
-}
-
-#Topic ¿¹Ãø ¿¹Á¦
-lda.out <- LDA(DTM,control = list(seed=11),k=5)
-dim(lda.out@gamma)
-dim(lda.out@beta)
-terms(lda.out,12)
-
-posterior_lda <- posterior(lda.out)
-round(posterior_lda$topics,3)
-########################################################
-

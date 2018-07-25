@@ -1,3 +1,8 @@
+#사전 준비사항########################################
+#PatientLevelPrediction.R 실행 후 실행할 것.
+######################################################
+library(progress)
+
 #XML_parser
 XML_PARSING <- function(xmlList){
     pattern_start <- as.vector(gregexpr('<[^/<>]+>[^<>]+<\\/[^<>]+>',xmlList)[[1]])
@@ -75,8 +80,6 @@ DIAG_PROCESSING <- function(diag_list){
 
 
 
-
-
 # load packages
 if(!require(parallel)) {
     install.packages("parallel")
@@ -89,10 +92,6 @@ numCores <- parallel::detectCores() - 1
 myCluster <- parallel::makeCluster(numCores)
 
 Sys.time()
-#파일 셋팅
-file="D:/Dongsu/R_code/note_sample.rds"
-
-
 
 connectionDetails<-DatabaseConnector::createConnectionDetails(dbms="sql server",
                                                               server="128.1.99.58",
@@ -111,6 +110,7 @@ diag_note <- DatabaseConnector::dbGetQuery(conn = connection,statement = "SELECT
 
 #조건 내에 부합하는 df들의 merge 값 설정###############################################
 cohort_outCount_df <- merge(outcomeCount_df,diag_note,by = c("PERSON_ID","NOTE_DATE"))
+
 #######################################################################################
 
 #outCount 값이 0, 1 인 경우로 dataFrame을 나눔 
@@ -119,75 +119,107 @@ out_value_1 <- cohort_outCount_df[cohort_outCount_df$outcomeCount == 1,]
 
 
 
-
-#RDS파일을 데이터프레임으로 저장
-#out_value_0 = X 경우, out_value_1 = O인 경우###################
-mediFrame <- out_value_1
-################################################################
-#mediFrame <- readRDS(file,refhook = NULL)
-
-#list 생성 및 ID, TEXT 저장
-medi_list = list(NOTE_ID=c(NA),NOTE_TEXT=c(NA))
-medi_list['NOTE_ID'] <- mediFrame['NOTE_ID']
-medi_list['NOTE_TEXT'] <- mediFrame['NOTE_TEXT']
-
-#XML Parsing을 위해 ROOT 추가.
-medi_list[['NOTE_TEXT']] <- paste("<xml>",medi_list[['NOTE_TEXT']],"</xml>")
-#XML Parsing을 위해 ><사이에 아무것도 없거나 공백이있다면 엔터 처리해준다.
-medi_list[['NOTE_TEXT']] <- gsub('>[ ]*<','>\n<',medi_list[['NOTE_TEXT']])
-
-#결과 저장할 df 생성
-final_xml_df <- data.frame(stringsAsFactors = FALSE) 
-
-#XML 파서로 나눔(병렬처리)
-diagnosis_list <- parallel::parLapply(cl = myCluster, X = medi_list[['NOTE_TEXT']], fun = XML_PARSING)
-
-#진단서 하나의 DataFrame을 list에 저장(병렬처리)
-result_xml_list <- parallel::parLapply(cl = myCluster, X = diagnosis_list, fun = DIAG_PROCESSING)
-
-#한개의 진단서당 NOTE_ID 삽입
-for (i in 1:length(result_xml_list)){
-    result_xml_list[[i]][,'NOTE_ID'] <- medi_list[['NOTE_ID']][i]
-}
-
-
-
-#dataFrame에 결과를 정리해서 넣어줌 모든 항목이 NA인 부분은 아예 dataframe에 추가하지 않음.
-#rbind 하는 시간이 오래걸려 div번씩 끊고 한번에 합치자.
-div= 1000
-result_tmp_df <- result_xml_list[[1]]
-flag = 0
-for (i in 2:length(result_xml_list)){
-    if (length(result_xml_list[[i]]) == length(result_xml_list[[1]])){
-        result_tmp_df <- rbind(result_tmp_df,result_xml_list[[i]])
-        if(i%%div == 0 & i>=div){
-            if(flag == 0){
-                result_xml_df <- result_tmp_df
-                result_tmp_df <- data.frame(stringsAsFactors = FALSE)
-                flag = 1
-            }
-            else{
-                result_xml_df <- rbind(result_xml_df,result_tmp_df)
-                if(i != length(result_xml_list)){
+for(count in 1:2){
+    #RDS파일을 데이터프레임으로 저장
+    #out_value_0 = X 경우, out_value_1 = O인 경우###################
+    if(count ==1){
+        mediFrame <- out_value_0
+    }
+    if(count ==2){
+        mediFrame <- out_value_1
+    }
+    ################################################################
+    #mediFrame <- readRDS(file,refhook = NULL)
+    
+    #list 생성 및 ID, TEXT 저장
+    medi_list = list(NOTE_ID=c(NA),NOTE_TEXT=c(NA))
+    medi_list['NOTE_ID'] <- mediFrame['NOTE_ID']
+    medi_list['NOTE_TEXT'] <- mediFrame['NOTE_TEXT']
+    
+    #XML Parsing을 위해 ROOT 추가.
+    medi_list[['NOTE_TEXT']] <- paste("<xml>",medi_list[['NOTE_TEXT']],"</xml>")
+    #XML Parsing을 위해 ><사이에 아무것도 없거나 공백이있다면 엔터 처리해준다.
+    medi_list[['NOTE_TEXT']] <- gsub('>[ ]*<','>\n<',medi_list[['NOTE_TEXT']])
+    
+    #결과 저장할 df 생성
+    final_xml_df <- data.frame(stringsAsFactors = FALSE) 
+    
+    #XML 파서로 나눔(병렬처리)
+    diagnosis_list <- parallel::parLapply(cl = myCluster, X = medi_list[['NOTE_TEXT']], fun = XML_PARSING)
+    
+    #진단서 하나의 DataFrame을 list에 저장(병렬처리)
+    result_xml_list <- parallel::parLapply(cl = myCluster, X = diagnosis_list, fun = DIAG_PROCESSING)
+    
+    #한개의 진단서당 NOTE_ID 삽입
+    for (i in 1:length(result_xml_list)){
+        result_xml_list[[i]][,'NOTE_ID'] <- medi_list[['NOTE_ID']][i]
+    }
+    
+    
+    
+    #dataFrame에 결과를 정리해서 넣어줌 모든 항목이 NA인 부분은 아예 dataframe에 추가하지 않음.
+    #rbind 하는 시간이 오래걸려 div번씩 끊고 한번에 합치자.
+    div= 1000
+    result_tmp_df <- result_xml_list[[1]]
+    flag = 0
+    pb <- progress_bar$new(total=(length(result_xml_list)-1))
+    for (i in 2:length(result_xml_list)){
+        if (length(result_xml_list[[i]]) == length(result_xml_list[[1]])){
+            result_tmp_df <- rbind(result_tmp_df,result_xml_list[[i]])
+            if(i%%div == 0 & i>=div){
+                if(flag == 0){
+                    result_xml_df <- result_tmp_df
                     result_tmp_df <- data.frame(stringsAsFactors = FALSE)
+                    flag = 1
+                }
+                else{
+                    result_xml_df <- rbind(result_xml_df,result_tmp_df)
+                    if(i != length(result_xml_list)){
+                        result_tmp_df <- data.frame(stringsAsFactors = FALSE)
+                    }
                 }
             }
         }
+        pb$tick()
     }
+    if(div > length(result_xml_list)){
+        result_xml_df <- result_tmp_df
+    }
+    
+    
+    #결과값 저장
+    if(count ==1){
+        result_xml_df_0 <- result_xml_df
+    }
+    if(count ==2){
+        result_xml_df_1 <- result_xml_df
+    }
+    
+    
+    
 }
-if(div > length(result_xml_list)){
-    result_xml_df <- result_tmp_df
-}
-
-
-
-write.csv(result_xml_df,file="D:/Dongsu/R_code/final_xml_df7.csv",row.names = FALSE)
-
 Sys.time()
 
 # 클러스터 중지
 parallel::stopCluster(myCluster)
 #################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
