@@ -41,11 +41,13 @@ K_POS_EXTRACTION <- function(wordlist){
 #¹®ÀåÁß Á¦°ÅÇÒ ºÎºÐÀ» ¼±Ã³¸®ÇØÁÖ´Â ÇÔ¼ö  
 NLP_PROCESSING <- function(xmldf){
     #4.Æ¯¼ö ¹®ÀÚ º¯°æ ¹× Á¦°Å
-    xmldf <- gsub('&#x0D;', " ", xmldf) # ¶ç¾î¾²±â´Â ¸¶Áö¸·¿¡ ¹«Á¶°Ç ÇÏ³ª·Î ÅëÀÏ ÇØÁÖ´Â ºÎºÐÀÌ ÀÖÀ½.
+    xmldf <- gsub('&#x0D;', " ", xmldf) # ¶ç¾î¾²±â´Â ¸¶Áö¸·¿¡ ¹«Á¶°Ç ÇÏ³ª·Î ÅëÀÏ ÇØÁÖ´Â ºÎºÐÀÌ ÀÖÀ½. 
     xmldf <- gsub('&lt;', " ", xmldf)
     xmldf <- gsub('&gt;', " ", xmldf)
     xmldf <- gsub('&amp;', " ", xmldf)
     xmldf <- gsub('&quot;', " ", xmldf)
+    
+    xmldf <- gsub(',', " ", xmldf) # ÄÞ¸¶´Â ÇÑÄ­ ¶³¾î¶ß·ÁÁÜ.
     
     xmldf <- gsub("[~!@#$%^&*()]"," ", xmldf)#Æ¯¼ö¹®ÀÚ Á¦°Å
     
@@ -65,14 +67,34 @@ NLP_PROCESSING <- function(xmldf){
     #7.¿£±×·¥
     #xmldf <- sub('[^A-Za-z °¡-ÆR]*graphic[ _-]variant[^A-Za-z °¡-ÆR]*','graphicvariant',xmldf) # KoNLP Ã³¸®½Ã ¿µ¾î¹®ÀåÀº ±×´ë·Î ³ª¿À±â ¶§¹®¿¡ ÇÑ´Ü¾î·Î ¹Ù·Î ³ª¿È.
     
+    #ÇÑ±Û, ¿µ¾î°¡ ºÙ¾îÀÖ´Â °æ¿ì¿¡ ¶³¾î¶ß·ÁÁÜ.
+    pos_start <- as.vector(gregexpr('[^°¡-ÆR ]*[A-Za-z]+[^°¡-ÆR ]*',xmldf)[[1]]) # Á¤±ÔÇ¥Çö½ÄÀ» ÅëÇØ °É·¯¼­ »ç¿ë 
+    pos_length <- as.vector(attr(gregexpr('[^°¡-ÆR ]*[A-Za-z]+[^°¡-ÆR ]*',xmldf)[[1]],'match.length'))
+    pos_end <- pos_start+pos_length-1
+    
+    word_data <- c()
+    if(length(pos_start) > 0){  
+        for(i in 1:length(pos_start)){
+            word_data[i] <- substr(xmldf,pos_start[i],pos_end[i])
+        }
+        
+        new_word_data <- paste("",toupper(word_data),"")
+        
+        for(i in 1:length(word_data)){
+            #xmldf <- sub(word_data[i],new_word_data[i],xmldf)
+        }
+    }
+    xmldf<- tolower(xmldf)# ´Ù½Ã ¼Ò¹®ÀÚ Ã³¸®¸¦ ÇØÁÜ.
+    
     
     #1.°ø¶õÃ³¸®
-    xmldf <- stringr::str_replace_all(xmldf,"[[:space:]]{1,}"," ")
+    xmldf <- stringr::str_replace_all(xmldf,"[[:space:]]{1,}"," ")# ÇÑÄ­ÀÌ»óÀÇ ¶ç¾î¾²±â¸¦ ÇÑÄ­À¸·Î ÅëÀÏ
     
     #¹Ù²Ü Çü½Ä
     xmldf <- paste(xmldf,'.',sep = '')#¹®ÀåÀÌ ¾Æ´Ñ °æ¿ì ³¯Â¥, ¾à¸í µî Áß¿äÇÑ Á¤º¸°¡ Àß¸®´Â °æ¿ì°¡ ÀÖÀ½. ex) 12-02-02 ´Ü¾î ÇÏ³ªÀÖÀ¸¸é 12-02-0 °ú 2·Î ³ª´¸.
     #¾îÂ÷ÇÇ ¸¶Áö¸· . Ãß°¡ÇØÁÖ¸é µû·Î ³ª´²Áö°í Á¤±ÔÇ¥Çö½Ä¿¡¼­ °Å¸£Áö ¾ÊÀ¸´Ï ±¦ÂúÀ»°Å¶ó°í »ý°¢ÇÔ.
     
+    return(xmldf)
 }
 #Ç°»ç ºÐ¼®ºÎ
 POS_ANALYSIS <- function(word_df){
@@ -159,7 +181,7 @@ for (count in 1:2){
     xml_df <- search_df[tag]
     
     #NLP_PROCESSING ÇÔ¼ö¸¦ ÅëÇÑ ÃÊ±â ¼³Á¤(º´·ÄÃ³¸®)
-    word_df <- parApply(myCluster,xml_df,2,NLP_PROCESSING)
+    word_df <- as.data.frame(parApply(myCluster,xml_df,1,NLP_PROCESSING))
     
     #ÇüÅÂ¼Ò ºÐ¼®ÈÄ ÇÕÄ¡±â
     result_word_list <- apply(word_df,1,POS_ANALYSIS)
@@ -181,3 +203,4 @@ for (count in 1:2){
         doc.list_1 <- doc.list
     }
 }
+

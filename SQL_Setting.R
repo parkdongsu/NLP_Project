@@ -121,5 +121,5 @@ outcomeCount_df <- data.frame(c(population["subjectId"],population["cohortStartD
 colnames(outcomeCount_df) <-c("PERSON_ID","NOTE_DATE","outcomeCount")
 #################################################################################################################
 
-
+#DatabaseConnector::dbDisconnect(conn = connection)
 
