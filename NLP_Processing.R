@@ -47,10 +47,14 @@ NLP_PROCESSING <- function(xmldf){
     xmldf <- gsub('&amp;', " ", xmldf)
     xmldf <- gsub('&quot;', " ", xmldf)
     
-    xmldf <- gsub(',', " ", xmldf) # 콤마는 한칸 떨어뜨려줌.
+    xmldf <- gsub("[\\]","", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\+]|[\\{]|[\\}]|[\\(]|[\\)]|[\\<]|[\\>]"," ", xmldf)#특수문자 제거
+    xmldf <- gsub("\\[","", xmldf)#특수문자 제거
+    xmldf <- gsub("\\]","", xmldf)#특수문자 제거
+    xmldf <- gsub("\\/","", xmldf)#특수문자 제거
+    xmldf <- gsub("[~!@#$%^&*]"," ", xmldf)#특수문자 제거
     
-    xmldf <- gsub("[~!@#$%^&*()]"," ", xmldf)#특수문자 제거
-    
+    xmldf <-xmldf <- gsub(',', " ", xmldf) # 콤마는 한칸 떨어뜨려줌.
     
     #2.대소문자 통일(선택가능으로 만들 것)
     #xmldf<- toupper(xmldf) # 대문자 
@@ -81,7 +85,7 @@ NLP_PROCESSING <- function(xmldf){
         new_word_data <- paste("",toupper(word_data),"")
         
         for(i in 1:length(word_data)){
-            #xmldf <- sub(word_data[i],new_word_data[i],xmldf)
+            xmldf <- sub(word_data[i],new_word_data[i],xmldf)
         }
     }
     xmldf<- tolower(xmldf)# 다시 소문자 처리를 해줌.
@@ -203,4 +207,5 @@ for (count in 1:2){
         doc.list_1 <- doc.list
     }
 }
+
 
