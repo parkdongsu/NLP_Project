@@ -3,7 +3,8 @@
 ######################################################
 library(progress)
 
-#XML_parser
+#XML_parser -> 정규표현식을 통해 파싱 진행
+
 XML_PARSING <- function(xmlList){
     pattern_start <- as.vector(gregexpr('<[^/<>]+>[^<>]+<\\/[^<>]+>',xmlList)[[1]])
     pattern_length <- as.vector(attr(gregexpr('<[^/<>]+>[^<>]+<\\/[^<>]+>',xmlList)[[1]],'match.length'))
@@ -17,7 +18,11 @@ XML_PARSING <- function(xmlList){
     return(xml_data)
 }
 
-#diag_Processer
+#diag_Processer(맨 아랫단의 태그의 정보만 뽑고 첫 태그부터 다음 첫태그로 구분함.)
+#ex) EMR 약명   약명    ##약
+#    EMR 진단명 진단명  감기
+
+#파싱하며 각 약명은 ?? 진단명은 ??를 구분하기 위한 함수.
 DIAG_PROCESSING <- function(diag_list){
     #첫번째 > 를 기준으로 태그를 추출
     tag_vector  <- as.vector(regexpr('>',diag_list))
@@ -103,9 +108,8 @@ connectionDetails <-connectionDetails
 connection <- connection
 
 
-#result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'INSERT INTO COHORT (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)')
-#result <- DatabaseConnector::dbGetQuery(conn = connection,statement = 'SELECT 747 as cohort_definition_id, person_id as subject_id, visit_end_date as cohort_start_date , visit_end_date as cohort_end_date FROM CDMPv1.dbo.VISIT_OCCURRENCE where visit_concept_id in (9201,9203) and datediff(day,visit_start_date, visit_end_date)>=7 AND VISIT_START_DATE >= '2005-01-01';')
 
+#
 diag_note <- DatabaseConnector::dbGetQuery(conn = connection,statement = "SELECT * FROM DBO.NOTE JOIN COHORT ON NOTE.person_id = COHORT.subject_id AND NOTE.NOTE_DATE = COHORT.COHORT_START_DATE WHERE cohort_definition_id = 747 AND NOTE_TITLE = \'퇴원요약\'") ;
 
 #조건 내에 부합하는 df들의 merge 값 설정###############################################
@@ -158,7 +162,7 @@ for(count in 1:2){
     
     
     #dataFrame에 결과를 정리해서 넣어줌 모든 항목이 NA인 부분은 아예 dataframe에 추가하지 않음.
-    #rbind 하는 시간이 오래걸려 div번씩 끊고 한번에 합치자.
+    #rbind 하는 시간이 오래걸려 div번씩 끊고 한번에 합쳐줌.
     div= 1000
     result_tmp_df <- result_xml_list[[1]]
     flag = 0

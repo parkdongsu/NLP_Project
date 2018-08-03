@@ -48,11 +48,15 @@ NLP_PROCESSING <- function(xmldf){
     xmldf <- gsub('&quot;', " ", xmldf)
     
     xmldf <- gsub("[\\]","", xmldf)#특수문자 제거
-    xmldf <- gsub("[\\+]|[\\{]|[\\}]|[\\(]|[\\)]|[\\<]|[\\>]"," ", xmldf)#특수문자 제거
-    xmldf <- gsub("\\[","", xmldf)#특수문자 제거
-    xmldf <- gsub("\\]","", xmldf)#특수문자 제거
-    xmldf <- gsub("\\/","", xmldf)#특수문자 제거
-    xmldf <- gsub("[~!@#$%^&*]"," ", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\+]|[\\{]|[\\}]|[\\(]|[\\)]|[\\<]|[\\>]|[\\']|[\\.]"," ", xmldf)#특수문자 제거
+    xmldf <- gsub('[\\"]'," ", xmldf)#특수문자 제거
+    xmldf <- gsub("\\["," ", xmldf)#특수문자 제거
+    xmldf <- gsub("\\]"," ", xmldf)#특수문자 제거
+    xmldf <- gsub("\\/"," ", xmldf)#특수문자 제거
+    xmldf <- gsub("\\'"," ", xmldf)#특수문자 제거
+    xmldf <- gsub('\\"'," ", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\~\\!\\@\\#\\$\\>\\<\\%\\≥\\=\\^\\&\\×\\*\\-\\:\\●\\★\\¤\\±]"," ", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\|]"," ", xmldf)#특수문자 제거
     
     xmldf <-xmldf <- gsub(',', " ", xmldf) # 콤마는 한칸 떨어뜨려줌.
     
@@ -100,6 +104,7 @@ NLP_PROCESSING <- function(xmldf){
     
     return(xmldf)
 }
+
 #품사 분석부
 POS_ANALYSIS <- function(word_df){
     word_list <- KoNLP::SimplePos22(word_df)
@@ -207,5 +212,7 @@ for (count in 1:2){
         doc.list_1 <- doc.list
     }
 }
+
+
 
 

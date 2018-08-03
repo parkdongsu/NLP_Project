@@ -212,14 +212,14 @@ for(tic in 1:count){ #count개씩 끊어서 진행.
     #write.csv(TOPIC,file = Path)
     
     #재입원, 재입원X 구분 클래스
-    value_vector_0or1 <- rep(1,c(option-val))
-    value_vector_0or1 <- c(value_vector_0or1,rep(0,length(DTM_tfxidf$dimnames$Docs)-(option-val)))
+    value_vector_0or1 <- rep('T',c(option-val))
+    value_vector_0or1 <- c(value_vector_0or1,rep('F',length(DTM_tfxidf$dimnames$Docs)-(option-val)))
     
     #TF_IDF중 전체 경우의 Matrix
     TOPIC<-as.matrix(DTM_tfxidf[1:nrow(DTM_tfxidf),])
     TOPIC_CLASS_ADD <- cbind(TOPIC,value_vector_0or1)
     Path <- paste('D:/Dongsu/NLP_Sample/TF-IDF_Matrix/TF-IDF_Matrix_only_1_',tic,'.csv')
-    write.csv(TOPIC_CLASS_ADD,file = Path)
+    write.csv(TOPIC_CLASS_ADD,file = Path,row.names = FALSE)
     
     #Topic_rating DF 생성
     Filt_TOPIC <- data.frame(stringsAsFactors = FALSE)

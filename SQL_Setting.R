@@ -29,7 +29,7 @@ connection <- DatabaseConnector::connect(connectionDetails)
 connectionDetails <-connectionDetails
 connection <- connection
 
-cdmDatabaseSchema<-"Dolphin_CDM.dbo"
+cdmDatabaseSchema<-"Dolphin_CDM.dbo" 
 targetDatabaseSchema<-"Dolphin_CDM.dbo"
 targetCohortTable<-"cohort"
 targetCohortId <- 747
@@ -37,7 +37,7 @@ outcomeCohortId <- 748
 cdmversion <- "5"
 
 #CREATE TABLE & INPUT VALUE
-#7일이상 입원한 환자들
+#DB 에서 7일이상 입원한 환자들의 정보를 뽑아 INSERT
 #===========================================
 # (T)
 #===========================================
@@ -71,7 +71,7 @@ sql <- SqlRender::translateSql(sql,
                                targetDialect=connectionDetails$dbms)$sql
 DatabaseConnector::executeSql(connection,sql)
 
-#30일 이내에 재입원한 환자를 DF로 뽑아내는 함수드
+#30일 이내에 재입원한 환자를 DF로 뽑아내는 함수.
 covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = FALSE,
                                                                 useDemographicsAge = FALSE, useDemographicsAgeGroup = FALSE,
                                                                 useDemographicsRace = FALSE, useDemographicsEthnicity = FALSE,
@@ -115,7 +115,7 @@ population <- PatientLevelPrediction::createStudyPopulation(plpData, population 
 
 
 #################################################################################################################
-#필요한 정보만 꺼내 dataframe으로 만듦
+#필요한 정보만 꺼내 dataframe으로 만듦 -> 30일 이내에 입원 유무를 파악해 결과가 저장됨.
 outcomeCount_df <- data.frame(c(population["subjectId"],population["cohortStartDate"],population["outcomeCount"]))
 #조인하기 위해 NOTE_TABLE과 속성 이름을 통일 시켜줌 
 colnames(outcomeCount_df) <-c("PERSON_ID","NOTE_DATE","outcomeCount")
