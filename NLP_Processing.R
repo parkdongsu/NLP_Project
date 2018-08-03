@@ -55,7 +55,7 @@ NLP_PROCESSING <- function(xmldf){
     xmldf <- gsub("\\/"," ", xmldf)#특수문자 제거
     xmldf <- gsub("\\'"," ", xmldf)#특수문자 제거
     xmldf <- gsub('\\"'," ", xmldf)#특수문자 제거
-    xmldf <- gsub("[\\~\\!\\@\\#\\$\\>\\<\\%\\≥\\=\\^\\&\\×\\*\\-\\:\\●\\★\\¤\\±]"," ", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\~]|[\\!]|[\\@]|[\\#]|[\\$]|[\\>]|[\\<]|[\\%]|[\\≥]|[\\=]|[\\^]|[\\&]|[\\×]|[\\*]|[\\-]|[\\:]|[\\●]|[\\★]|[\\¤]|[\\±]"," ", xmldf)
     xmldf <- gsub("[\\|]"," ", xmldf)#특수문자 제거
     
     xmldf <-xmldf <- gsub(',', " ", xmldf) # 콤마는 한칸 떨어뜨려줌.
@@ -190,10 +190,11 @@ for (count in 1:2){
     xml_df <- search_df[tag]
     
     #NLP_PROCESSING 함수를 통한 초기 설정(병렬처리)
-    word_df <- as.data.frame(parApply(myCluster,xml_df,1,NLP_PROCESSING))
+    word_df <- data.frame(parApply(myCluster,xml_df,1,NLP_PROCESSING),stringsAsFactors = FALSE)
     
     #형태소 분석후 합치기
     result_word_list <- apply(word_df,1,POS_ANALYSIS)
+    
     #result_word_list <- parApply(myCluster,word_df,1,POS_ANALYSIS)
     result_word_list<- unlist(result_word_list)
     
@@ -212,7 +213,6 @@ for (count in 1:2){
         doc.list_1 <- doc.list
     }
 }
-
 
 
 
