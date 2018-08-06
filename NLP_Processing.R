@@ -47,6 +47,14 @@ NLP_PROCESSING <- function(xmldf){
     xmldf <- gsub('&amp;', " ", xmldf)
     xmldf <- gsub('&quot;', " ", xmldf)
     
+    xmldf <- gsub("[ㄱ-ㅎ]","", xmldf)#자음 오타 제거
+    xmldf <- gsub("[ㅏ-ㅣ]","", xmldf)#모음 오타 제거 
+    
+    xmldf <- gsub("[\\‘]","", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\’]","", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\“]","", xmldf)#특수문자 제거
+    xmldf <- gsub("[\\”]","", xmldf)#특수문자 제거
+    
     xmldf <- gsub("[\\]","", xmldf)#특수문자 제거
     xmldf <- gsub("[\\+]|[\\{]|[\\}]|[\\(]|[\\)]|[\\<]|[\\>]|[\\']|[\\.]"," ", xmldf)#특수문자 제거
     xmldf <- gsub('[\\"]'," ", xmldf)#특수문자 제거
@@ -55,9 +63,8 @@ NLP_PROCESSING <- function(xmldf){
     xmldf <- gsub("\\/"," ", xmldf)#특수문자 제거
     xmldf <- gsub("\\'"," ", xmldf)#특수문자 제거
     xmldf <- gsub('\\"'," ", xmldf)#특수문자 제거
-    xmldf <- gsub("[\\~]|[\\!]|[\\@]|[\\#]|[\\$]|[\\>]|[\\<]|[\\%]|[\\≥]|[\\=]|[\\^]|[\\&]|[\\×]|[\\*]|[\\-]|[\\:]|[\\●]|[\\★]|[\\¤]|[\\±]"," ", xmldf)
+    xmldf <- gsub("[\\`]|[\\_]|[\\~]|[\\!]|[\\@]|[\\#]|[\\$]|[\\>]|[\\<]|[\\%]|[\\≥]|[\\=]|[\\^]|[\\&]|[\\×]|[\\*]|[\\-]|[\\:]|[\\●]|[\\★]|[\\¤]|[\\±]"," ", xmldf)
     xmldf <- gsub("[\\|]"," ", xmldf)#특수문자 제거
-    
     xmldf <-xmldf <- gsub(',', " ", xmldf) # 콤마는 한칸 떨어뜨려줌.
     
     #2.대소문자 통일(선택가능으로 만들 것)
@@ -213,6 +220,3 @@ for (count in 1:2){
         doc.list_1 <- doc.list
     }
 }
-
-
-

@@ -15,6 +15,7 @@ for (i in 1:length(Total_Target_note)){
 }
 #unique_word를 모두 집계
 WORD <- unique(unlist(word_piece_list))
+
 #WORD 와 합쳐 만들 NUM 생성
 NUM <- rep(0,length(WORD))
 

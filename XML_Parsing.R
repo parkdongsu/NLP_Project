@@ -110,7 +110,7 @@ connection <- connection
 
 
 #
-diag_note <- DatabaseConnector::dbGetQuery(conn = connection,statement = "SELECT * FROM DBO.NOTE JOIN COHORT ON NOTE.person_id = COHORT.subject_id AND NOTE.NOTE_DATE = COHORT.COHORT_START_DATE WHERE cohort_definition_id = 747 AND NOTE_TITLE = \'퇴원요약\'") ;
+diag_note <- DatabaseConnector::dbGetQuery(conn = connection,statement = "SELECT TOP 10000 * FROM DBO.NOTE JOIN COHORT ON NOTE.person_id = COHORT.subject_id AND NOTE.NOTE_DATE = COHORT.COHORT_START_DATE WHERE cohort_definition_id = 747 AND NOTE_TITLE = \'퇴원요약\'") ;
 
 #조건 내에 부합하는 df들의 merge 값 설정###############################################
 cohort_outCount_df <- merge(outcomeCount_df,diag_note,by = c("PERSON_ID","NOTE_DATE"))
@@ -207,13 +207,6 @@ Sys.time()
 # 클러스터 중지
 parallel::stopCluster(myCluster)
 #################################################################################
-
-
-
-
-
-
-
 
 
 
