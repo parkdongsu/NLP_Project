@@ -1,87 +1,214 @@
-
-SourceString <- strsplit(doc.df$NOTE_TEXT[1],' ')[[1]][1]
-TargetString <- dictionary
-
-#getOption("sd_num_thread")
-word <- stringdist::stringdist(SourceString, TargetString, method = c("jaccard"), useBytes = FALSE,
-                             weight = c(d = 1, i = 1, s = 1, t = 1), q = 1,nthread = 1)
-
-min(word)
-
-nchar(SourceString)
-
-# ÇÑ±Û º¤ÅÍ¸¦ °¡Á®¿Â ÈÄ ?ÀÚ ÀÌ»óÀÇ ¼ýÀÚ¸¦ °¡Áø ´Ü¾î ´ëÇØ¼­ minÀÌ 1/(±ÛÀÚ °¹¼ö) ÀÌÇÏ ÀÎ ³à¼®µéÀÇ min°ªÀ» ±¸ÇÔ. (minÀÌ 0< min°ª <1/±ÛÀÚ°¹¼ö ÀÏ °æ¿ì ¹Ù²ãÁÜ)
+#ÇÑ±Û hunspell (ÇüÅÂ¼Ò ´ÜÀ§·Î ³ª´®) -> levenshtein(ÆíÁý°Å¸® 1¼³Á¤)
+#ÇÕÃÄÁ® ÀÖ´Â °Í.
 
 
+#ÇÑ±Û
 
 library(progress)
 
+tmp_similar_word <-c()
+similar_word <- c()
+val = 1
 
-strsplit(doc.df$NOTE_TEXT[5],' ')[[1]]
-length(strsplit(doc.df$NOTE_TEXT[2],' ')[[1]])
-min_distence <- c()
-min_word <- c()
-
-min_word_dictionary <- list()
-
-pb <- progress_bar$new(total=((nrow(doc.df))))
+#pb <- progress_bar$new(total=(nrow(doc.df)))
 for(i in 1:nrow(doc.df)){
-    print(i)
     #pb$tick()
-    for(k in 1:length(strsplit(doc.df$NOTE_TEXT[i],' ')[[1]]))
-        
-        word <- strsplit(doc.df$NOTE_TEXT[1],' ')[[1]][2]
-        
-        word_distence <- min(stringdist::stringdist(word, dictionary, method = c("jaccard"), useBytes = FALSE,
-                                   weight = c(d = 1, i = 1, s = 1, t = 1), q = 1,nthread = 7))
-        min_distence <- c(min_distence,word_distence)
-        min_word     <- c(min_word,paste(i,'_',word))
-        #minÀ¸·Î ³ª¿Â ´Ü¾î¶û ºñ±³ÇßÀ»¶§ 0º¸´Ù Å©°í ÇÑ±ÛÀÚ ÀÌ»ó Æ²¸®¸é ¾ÈµÊ
-        if(min_distence >= 0 & min_distence <= (1/min_distence) ){
-            which_word <- which((1/min_distence) > stringdist::stringdist(word, dictionary, method = c("jaccard"), useBytes = FALSE,
-                                                            weight = c(d = 1, i = 1, s = 1, t = 1), q = 1,nthread = 7))
-            dictionary[which_word]
+    text_length <- length(strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
+    if(text_length != 0){
+        for(k in 1:text_length){
             
+            word <- strsplit(doc.df$NOTE_TEXT[i],' ')[[1]][k]
+            
+            if (nchar(word)>2){
+                
+                levenshtein_list <- RecordLinkage::levenshteinDist(word,dictionary)
+                
+                word_distence <- min(levenshtein_list)
+                
+                if(length(which(levenshtein_list == 1)) != 0){
+                    tmp_similar_word <- c(tmp_similar_word,paste(word,':',dictionary[which(levenshtein_list == 1)]))
+                    
+                }
+            }
         }
-}
-
-
-
-
-
-
-doc.df$NOTE_TEXT[4]
-
-length(strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
-doc.df$NOTE_TEXT[2]
-library(progress)
-
-
-min_distence <- c()
-min_word <- c()
-
-min_word_dictionary <- vector('list',nrow(doc.df))
-
-pb <- progress_bar$new(total=((nrow(doc.df))))
-for(i in 1:nrow(doc.df)){
-    i = 1
-    #pb$tick()
-    for(k in 1:length(strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])){
         
-        word <- strsplit(doc.df$NOTE_TEXT[1],' ')[[1]][k]
-    
-    word_distence <- min(stringdist::stringdist(word, dictionary, method = c("jaccard"), useBytes = FALSE,
-                                                weight = c(d = 1, i = 1, s = 1, t = 1), q = 1,nthread = 7))
-    min_distence <- c(min_distence,word_distence)
-    min_word     <- c(min_word,paste(i,'_',word))
-    #minÀ¸·Î ³ª¿Â ´Ü¾î¶û ºñ±³ÇßÀ»¶§ 0º¸´Ù Å©°í ÇÑ±ÛÀÚ ÀÌ»ó Æ²¸®¸é ¾ÈµÊ
-    if(min_distence >= 0 & min_distence <= (1/min_distence) ){
-        which_word <- which((1/min_distence) > stringdist::stringdist(word, dictionary, method = c("jaccard"), useBytes = FALSE,
-                                                                      weight = c(d = 1, i = 1, s = 1, t = 1), q = 1,nthread = 7))
-        min_word_dictionary[[i]][k] <- dictionary[which_word]
-        
+        if(i == 10000*val){
+            similar_word <-  c(similar_word,tmp_similar_word)
+            tmp_similar_word <- c()
+            val = val + 1 
         }
     }
+    
 }
-min_word_dictionary[[2]]
+
+#¿µ¾î
+library(progress)
+
+#»çÀü »ý¼º
+dictionary_eng <-read.table('D:/Dongsu/NLP_Sample/R_CODE/DIC/dic_english.txt',stringsAsFactors = FALSE)
+dictionary_eng <- dictionary_eng$V1
+#¼Ò¹®ÀÚ·Î ¹Ù²ãÁÜ. 
+dictionary_eng <- tolower(dictionary_eng)
+
+#Áø´Ü¼­ÀÇ ¸ðµç ¿µ¾î ´Ü¾î ÃßÃâ(ÇÑ±Û Á¦°Å)
+eng_tmp_word <- c()
+eng_word <- c()
+pb <- progress_bar$new(total=nrow(doc.df))
+for(i in 1:nrow(doc.df)){
+    pb$tick()
+    only_eng <-gsub('[°¡-ÆR]','',strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
+    only_eng <-unique(only_eng)
+    only_eng <- only_eng[-which(only_eng == "")]
+    
+
+    eng_tmp_word <- c(eng_tmp_word,only_eng)
+    
+    if(i%%100 == 0){
+        eng_word <- c(eng_word,eng_tmp_word)
+        eng_tmp_word <- c()
+    }
+}
+eng_word <- c(eng_word,eng_tmp_word)
+eng_word <- unique(eng_word)
+length(eng_word)
+
+#»çÀü¿¡ ÀÖÀ¸¸é ¿öµå Á¦°Å 
+exist_word <- c()
+exist_tmp_word <- c()
+pb <- progress_bar$new(total=length(eng_word))
+for(i in 1:length(eng_word)){
+    pb$tick()
+    exist_tmp_word <- dictionary_eng[which(dictionary_eng == eng_word[i])]
+    exist_word <- c(exist_word,exist_tmp_word)
+}
+eng_word <- setdiff(eng_word,exist_word)
+
+
+
+#¿ÀÅ»ÀÚ Ã£±â.
+tmp_similar_word_eng <-c()
+similar_word_eng <- c()
+pb <- progress_bar$new(total=length(eng_word))
+for(i in 1:length(eng_word)){
+    pb$tick()
+    word <- eng_word[i]
+
+    if (nchar(word)>2){ # 3±ÛÀÚ ÀÌ»ó¸¸ Ã£À½.
+        
+    levenshtein_eng_list <- RecordLinkage::levenshteinDist(word,dictionary_eng)
+    
+    word_distence <- min(levenshtein_eng_list)
+    
+    if(length(which(levenshtein_eng_list == 1)) != 0){
+        tmp_similar_word_eng <- c(tmp_similar_word_eng,paste(word,':',dictionary_eng[which(levenshtein_eng_list == 1)]))
+    }
+    }
+    
+    if(i%%100 == 0){
+        similar_word_eng <- c(similar_word_eng,tmp_similar_word_eng)
+        tmp_similar_word_eng <- c()
+    }
+    
+}
+similar_word_eng <- c(similar_word_eng,tmp_similar_word_eng)
+
+length(similar_word_eng)
+
+
+write.csv(similar_word_eng,'D:/levenshtein.csv')
+
+similar_word_eng_df <- data.frame(similar_word_eng,stringsAsFactors = FALSE)
+
+
+
+library(Rcpp)
+library(digest)
+
+
+
+#»çÀü »ý¼º
+dictionary #dictionary. R ÆÄÀÏ¿¡ ÀÖÀ½
+
+#Áø´Ü¼­ÀÇ ¸ðµç ÇÑ±Û ´Ü¾î ÃßÃâ(¿µ¾î Á¦°Å)
+kor_tmp_word <- c()
+kor_word <- c()
+pb <- progress_bar$new(total=nrow(doc.df))
+for(i in 1:nrow(doc.df)){
+    pb$tick()
+    only_kor <-gsub('[a-zA-Z]','',strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
+    only_kor <-unique(only_kor)
+    only_kor <- only_kor[-which(only_kor == "")]
+    
+    
+    kor_tmp_word <- c(kor_tmp_word,only_kor)
+    
+    if(i%%100 == 0){
+        kor_word <- c(kor_word,kor_tmp_word)
+        kor_tmp_word <- c()
+    }
+}
+kor_word <- c(kor_word,kor_tmp_word)
+kor_word <- unique(kor_word)
+
+#»çÀü¿¡ ÀÖÀ¸¸é ¿öµå Á¦°Å 
+exist_word <- c()
+exist_tmp_word <- c()
+pb <- progress_bar$new(total=length(kor_word))
+for(i in 1:length(kor_word)){
+    pb$tick()
+    exist_tmp_word <- dictionary[which(dictionary == kor_word[i])]
+    exist_word <- c(exist_word,exist_tmp_word)
+}
+eng_word <- setdiff(eng_word,exist_word)
+
+
+#¿ÀÅ»ÀÚ Ã£±â
+
+
+
+
+
+
+
+N_gram_1 <- doc.df$NOTE_TEXT
+N_gram_2 <- doc.df$NOTE_TEXT2
+N_gram_3 <- doc.df$NOTE_TEXT3
+
+lapply(N_gram1,MACTHING)
+
+#dictionary¿¡¼­ ´Ü¾î ÇÏ³ª¾¿ °¡Á®¿Í¼­ Á¤±ÔÇ¥Çö½Ä ¾È¿¡ ³Ö¾î¼­ ex) grexper('[',dictionary[i],']',N_gram1) grexper <- ÀÌ°Ç ¿¹½ÃÀÓ µý°ÅÀÏ ¼ö ÀÖÀ½.
+#TRUE¸é ¿öµå Ã¢°í¿¡ ÀúÀå.¤¾¤¾¤¾
+
+
+
+#µ¥ÀÌÅÍ ÇÁ·¹ÀÓ¿¡¼­ n1,n2,n3ÀÏ¶§ ±âÁØ ³ª´²¼­ »çÀü¿¡ ÀÖ´Â ´Ü¾î·Î °Ë»öÇßÀ»¶§ ³ª¿À´Â ´Ü¾î -> °Å±â¼­ ´Ü¾î ¶Ç ºÐ¸®ÇØ¾ßµÇ°í ¾È½¬¿ïµí
+#¶ç¾î¾²±â ´ÜÀ§·Î ³ª´²¼­ Á¤±ÔÇ¥Çö½ÄÀ» ÅëÇØ Æ÷ÇÔµÈ´Ù¸é ±× ´Ü¾î¸¦ ÅäÇÈÀ¸·Î °¡Á®¿ÀÀÚ.
+
+for(i in 1:nrow(doc.df)){
+    N_gram_1_list <- strsplit(N_gram_1[i],' ')[[1]]
+    
+    if(length(N_gram_1_list) > 0){
+        for(k in 1:length(N_gram_1_list)){
+            N_gram_1_list[k]
+        }
+        
+    }
+}
+
+#¾Æ¿¹ ¹®ÀÚ°¡ ¾øÀ»‹š´Â ¤Ó¤¸¿ìÀÚ.
+
+
+
+
+
+
+
+
+
+
+
+
+grep('ÇÕº´Áõ',N_gram_1_word_list)
+
+
 

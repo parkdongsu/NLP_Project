@@ -34,8 +34,6 @@ mergeUserDic(zz)
 
 
 
-mergeUserDic(data.frame(c("안철수", "박근혜", "문제인"), c("nqpc")))
-
 
 
 
