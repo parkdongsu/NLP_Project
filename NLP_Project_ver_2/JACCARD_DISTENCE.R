@@ -1,45 +1,3 @@
-#한글 hunspell (형태소 단위로 나눔) -> levenshtein(편집거리 1설정)
-#합쳐져 있는 것.
-
-
-#한글
-
-library(progress)
-
-tmp_similar_word <-c()
-similar_word <- c()
-val = 1
-
-#pb <- progress_bar$new(total=(nrow(doc.df)))
-for(i in 1:nrow(doc.df)){
-    #pb$tick()
-    text_length <- length(strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
-    if(text_length != 0){
-        for(k in 1:text_length){
-            
-            word <- strsplit(doc.df$NOTE_TEXT[i],' ')[[1]][k]
-            
-            if (nchar(word)>2){
-                
-                levenshtein_list <- RecordLinkage::levenshteinDist(word,dictionary)
-                
-                word_distence <- min(levenshtein_list)
-                
-                if(length(which(levenshtein_list == 1)) != 0){
-                    tmp_similar_word <- c(tmp_similar_word,paste(word,':',dictionary[which(levenshtein_list == 1)]))
-                    
-                }
-            }
-        }
-        
-        if(i == 10000*val){
-            similar_word <-  c(similar_word,tmp_similar_word)
-            tmp_similar_word <- c()
-            val = val + 1 
-        }
-    }
-    
-}
 
 #영어
 library(progress)
@@ -119,96 +77,166 @@ write.csv(similar_word_eng,'D:/levenshtein.csv')
 
 similar_word_eng_df <- data.frame(similar_word_eng,stringsAsFactors = FALSE)
 
-
-
+#영어------------------------------------------------------------
 library(Rcpp)
 library(digest)
 
+#한글
+N_gram_length = 3
+word_storage_N1 <- c()
+word_storage_N2 <- c()
+word_storage_N3 <- c()
 
+for(count in 2:N_gram_length){
+    
 
-#사전 생성
-dictionary #dictionary. R 파일에 있음
-
-#진단서의 모든 한글 단어 추출(영어 제거)
-kor_tmp_word <- c()
-kor_word <- c()
-pb <- progress_bar$new(total=nrow(doc.df))
-for(i in 1:nrow(doc.df)){
-    pb$tick()
-    only_kor <-gsub('[a-zA-Z]','',strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
-    only_kor <-unique(only_kor)
-    only_kor <- only_kor[-which(only_kor == "")]
+    #사전 생성
+    #dictionary. R 파일에 있음
     
-    
-    kor_tmp_word <- c(kor_tmp_word,only_kor)
-    
-    if(i%%100 == 0){
-        kor_word <- c(kor_word,kor_tmp_word)
+    #진단서의 모든 한글 단어 추출(영어 제거)
+    if(count == 1){
         kor_tmp_word <- c()
-    }
-}
-kor_word <- c(kor_word,kor_tmp_word)
-kor_word <- unique(kor_word)
+        kor_word <- c()
 
-#사전에 있으면 워드 제거 
-exist_word <- c()
-exist_tmp_word <- c()
-pb <- progress_bar$new(total=length(kor_word))
-for(i in 1:length(kor_word)){
-    pb$tick()
-    exist_tmp_word <- dictionary[which(dictionary == kor_word[i])]
-    exist_word <- c(exist_word,exist_tmp_word)
-}
-eng_word <- setdiff(eng_word,exist_word)
-
-
-#오탈자 찾기
-
-
-
-
-
-
-
-N_gram_1 <- doc.df$NOTE_TEXT
-N_gram_2 <- doc.df$NOTE_TEXT2
-N_gram_3 <- doc.df$NOTE_TEXT3
-
-lapply(N_gram1,MACTHING)
-
-#dictionary에서 단어 하나씩 가져와서 정규표현식 안에 넣어서 ex) grexper('[',dictionary[i],']',N_gram1) grexper <- 이건 예시임 딴거일 수 있음.
-#TRUE면 워드 창고에 저장.ㅎㅎㅎ
-
-
-
-#데이터 프레임에서 n1,n2,n3일때 기준 나눠서 사전에 있는 단어로 검색했을때 나오는 단어 -> 거기서 단어 또 분리해야되고 안쉬울듯
-#띄어쓰기 단위로 나눠서 정규표현식을 통해 포함된다면 그 단어를 토픽으로 가져오자.
-
-for(i in 1:nrow(doc.df)){
-    N_gram_1_list <- strsplit(N_gram_1[i],' ')[[1]]
-    
-    if(length(N_gram_1_list) > 0){
-        for(k in 1:length(N_gram_1_list)){
-            N_gram_1_list[k]
+        for(i in 1:nrow(doc.df)){
+            
+            only_kor <-gsub('[a-zA-Z]','',strsplit(doc.df$NOTE_TEXT[i],' ')[[1]])
+            only_kor <-unique(only_kor)
+            only_kor <- only_kor[-which(only_kor == "")]
+            
+            
+            kor_tmp_word <- c(kor_tmp_word,only_kor)
+            
+            if(i%%100 == 0){
+                kor_word <- c(kor_word,kor_tmp_word)
+                kor_tmp_word <- c()
+            }
         }
+        kor_word <- c(kor_word,kor_tmp_word)
+        kor_word_unique <- unique(kor_word)
+    }
+    
+    else if(count == 2){
+        kor_tmp_word <- c()
+        kor_word <- c()
+
+        for(i in 1:nrow(doc.df)){
+ 
+            only_kor <-strsplit(doc.df$NOTE_TEXT_N2[i],' ')
+            only_kor <-unique(only_kor)
+            only_kor <- only_kor[-which(only_kor == "")]
+            
+            
+            kor_tmp_word <- c(kor_tmp_word,only_kor)
+            
+            if(i%%100 == 0){
+                kor_word <- c(kor_word,kor_tmp_word)
+                kor_tmp_word <- c()
+            }
+        }
+        kor_word <- c(kor_word,kor_tmp_word)
+        kor_word_unique <- unique(kor_word)
+    }
+    else if(count == 3){
+        kor_tmp_word <- c()
+        kor_word <- c()
+
+        for(i in 1:nrow(doc.df)){
+
+            only_kor <-strsplit(doc.df$NOTE_TEXT_N3[i],' ')
+            only_kor <-unique(only_kor)
+            only_kor <- only_kor[-which(only_kor == "")]
+            
+            
+            kor_tmp_word <- c(kor_tmp_word,only_kor)
+            
+            if(i%%100 == 0){
+                kor_word <- c(kor_word,kor_tmp_word)
+                kor_tmp_word <- c()
+            }
+        }
+        kor_word <- c(kor_word,kor_tmp_word)
+        kor_word_unique <- unique(kor_word)
+    }
+    
+    #사전에 있으면 워드 제거 
+    exist_word <- c()
+    exist_tmp_word <- c()
+
+    for(i in 1:length(kor_word_unique)){
+
+        exist_tmp_word <- dictionary[which(dictionary == kor_word_unique[i])]
+        exist_word <- c(exist_word,exist_tmp_word)
+    }
+    kor_word_unique <- setdiff(kor_word_unique,exist_word)
+    
+    
+    #오탈자 찾기
+    
+    
+    #사전-한글 단어 비교------------------------------------------------------------
+    
+    #단어들의 '집합(Set)'을 한 단어 단위로 끊어 String 값으로 저장
+    kor_word_string <- as.String(kor_word_unique)
+    
+    #\n 단위로 나눠 각 단어의 위치를 저장 
+    spacing <- as.vector(gregexpr('\n',kor_word_string)[[1]])    
+    spacing <- c(0,spacing)
+    
+    #혹시 몰라 df 로 저장 (단어 위치, 단어)
+    word_location_df <- data.frame(location = c(spacing), word = c(kor_word_unique),stringsAsFactors = FALSE)
+    
+    #spacing과 동일
+    word_location <- word_location_df$location
+    
+    #각 단어를
+    
+    word_storage <- c()
+    for(i in 1:length(dictionary)){
+      
+        #str 단어에서 사전 단어 하나당 단어가 들어간다면 몇번째 자리에 나오는지 구함.
+        diction_location <- as.vector(gregexpr(dictionary[i],kor_word_string)[[1]])
         
+        #diction_location의 값이 없을때는 무시
+        if(diction_location[1] != -1){
+            for(k in 1:length(diction_location)){
+                #각 사전단어에서 제일 가까운 \n의 위치 값을 구함.(절대값이라 +,- 구분이 안되서 변수 두개에 둘다 저장)
+                high_dic <- diction_location[k] + min(abs((word_location)-diction_location[k]))
+                low_dic <-  diction_location[k] - min(abs((word_location)-diction_location[k]))
+                #둘중의 하나의 값엔 이상한 값, 하나는 정상 값이 들어있음.
+                high_dic_word <- word_location_df[word_location_df$location == high_dic,2]
+                low_dic_word <- word_location_df[word_location_df$location == low_dic,2]   
+                #단어가 사전에 있는지 파악해서 넣어줌.
+                if(length(high_dic_word) != 0){
+                    if(length(grep(dictionary[i],high_dic_word)) == TRUE){
+                        word_storage <- c(word_storage,high_dic_word)
+                    }
+                }
+                
+                if(length(low_dic_word) != 0){
+                    if(length(grep(dictionary[i],low_dic_word)) == TRUE){
+                        word_storage <- c(word_storage,low_dic_word)
+                    }
+                }
+                
+                
+            }
+        }
+    }
+    
+    #사전-한글 단어 비교------------------------------------------------------------
+    if(count == 1 ){
+        word_storage_N1 <- c(word_storage_N1,word_storage)
+    }
+    else if(count == 2 ){
+        word_storage_N2 <- c(word_storage_N2,word_storage)
+    }
+    else if(count == 3 ){
+        word_storage_N3 <- c(word_storage_N3,word_storage)
     }
 }
 
-#아예 문자가 없을떄는 ㅣㅈ우자.
-
-
-
-
-
-
-
-
-
-
-
-
-grep('합병증',N_gram_1_word_list)
+write.csv(word_storage_N1,'D:/N1.csv')
 
 
 

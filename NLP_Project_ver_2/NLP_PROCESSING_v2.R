@@ -60,6 +60,10 @@ NLP_PROCESSING <- function(xmldf){
     
     xmldf <- gsub('“', " ", xmldf) # 큰따옴표는 한칸 떨어뜨려줌.
     xmldf <- gsub('”', " ", xmldf) # 큰따옴표는 한칸 떨어뜨려줌.
+    xmldf <- gsub('‘', " ", xmldf) # 큰따옴표는 한칸 떨어뜨려줌.
+    xmldf <- gsub('’', " ", xmldf) # 큰따옴표는 한칸 떨어뜨려줌.
+    
+    
     
     xmldf <-xmldf <- gsub(',', " ", xmldf) # 콤마는 한칸 떨어뜨려줌.
     
@@ -208,46 +212,8 @@ colnames(doc.df) <- c('NOTE_ID','NOTE_TEXT','outcomeCount')
 
 
 # 클러스터 중지
-#parallel::stopCluster(myCluster)
-
-
-
-#산자부 용도.(현병력/ 경과요약 둘다 보여주기 위함 )
-
-search_df_1 <- result_xml_df[result_xml_df$`<MN>`=='경과요약',] # 태그, 검색어 지정 ex) <MN>, '약명'
-
-
-tag ='<TD>' # NLP 처리하고 싶은 tag 입력
-
-#검색 후 tag가 NA인 행을 삭제
-search_df_1[,tag][is.na(search_df_1[,tag])] <- ""
-
-for (i in nrow(search_df_1):1){# 뒤에서부터 삭제해 행이 밀려서 삭제 되지 않도록 처리함.
-    if(search_df_1[i,tag] == ""){
-        search_df_1 <- search_df_1[-i,]
-    }
-}
-
-#NLP 용 df 만들기
-xml_df <- search_df_1[tag]
-
-#NLP_PROCESSING 함수를 통한 초기 설정(병렬처리)
-word_df <- as.data.frame(parApply(myCluster,xml_df,1,NLP_PROCESSING))
-
-#형태소 분석후 합치기
-result_word_list <- apply(word_df,1,POS_ANALYSIS)
-#result_word_list <- parApply(myCluster,word_df,1,POS_ANALYSIS)
-result_word_list<- unlist(result_word_list)
-
-#원하는 품사 추출 후 하나의 문장으로 합쳐줌. (병렬처리)
-doc.list <- parallel::parLapply(myCluster,result_word_list,K_POS_EXTRACTION)
-
-#DF 에 저장 
-doc.tmp_df <- data.frame(unlist(doc.list),stringsAsFactors = FALSE)
-doc.df_1 <- data.frame(c(search_df_1['NOTE_ID'],doc.tmp_df,search_df_1['outcomeCount']),stringsAsFactors = FALSE)
-
-#colname 지정
-colnames(doc.df) <- c('NOTE_ID','NOTE_TEXT','outcomeCount')
-
-# 클러스터 중지
 parallel::stopCluster(myCluster)
+
+
+
+

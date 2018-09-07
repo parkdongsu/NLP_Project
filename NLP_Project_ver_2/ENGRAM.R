@@ -61,9 +61,11 @@ for(i in 1:length(engram_list)){
     }
 }
 
-doc.df <- cbind(doc.df,unlist(engram2_list))
-doc.df <- cbind(doc.df,unlist(engram3_list))
+engram2_df <- data.frame(NOTE_TEXT_N2 = unlist(engram2_list),stringsAsFactors = FALSE)
+engram3_df <- data.frame(NOTE_TEXT_N3 = unlist(engram3_list),stringsAsFactors = FALSE)
 
-doc.df <- doc.df[,c(1,2,4,5,3)]
-colnames(doc.df) <- c('NOTE_ID','NOTE_TEXT','NOTE_TEXT_N2','NOTE_TEXT_N3','outcomeCount')
+doc.df <- cbind(doc.df,engram2_df)
+doc.df <- cbind(doc.df,engram3_df)
+
+
 
